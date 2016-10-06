@@ -1,0 +1,91 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+  http://www.springframework.org/schema/beans/spring-beans.xsd
+  http://www.springframework.org/schema/context
+  http://www.springframework.org/schema/context/spring-context.xsd
+  http://www.springframework.org/schema/tx
+  http://www.springframework.org/schema/tx/spring-tx.xsd
+  http://www.springframework.org/schema/mvc
+  http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+
+    <context:component-scan base-package="ru.aleksey.cp"/>
+
+    <mvc:resources mapping="/resources/**" location="/resources/" />
+
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/pages/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="${ds.driverClassName}"/>
+        <property name="url" value="${ds.url}"/>
+        <property name="username" value="${ds.username}"/>
+        <property name="password" value="${ds.password}"/>
+    </bean>
+
+    <!-- Hibernate 4 SessionFactory Bean definition -->
+    <bean id="hibernate4AnnotatedSessionFactory"
+          class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="annotatedClasses">
+            <list>
+                <value>ru.aleksey.cp.model.Account</value>
+                <value>ru.aleksey.cp.model.Payment</value>
+                <value>ru.aleksey.cp.model.Person</value>
+            </list>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+                <!--<prop key="hibernate.current_session_context_class">thread</prop>-->
+                <prop key="hibernate.show_sql">true</prop>
+                <prop key="hibernate.id.new_generator_mappings">true</prop>
+
+            </props>
+        </property>
+    </bean>
+
+    <bean id="personDao" class ="ru.aleksey.cp.dao.PersonDaoImpl">
+        <property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory"/>
+    </bean>
+
+    <bean id="accountDao" class ="ru.aleksey.cp.dao.AccountDaoImpl">
+        <property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory"/>
+    </bean>
+
+    <bean id="paymentDao" class ="ru.aleksey.cp.dao.PaymentDaoImpl">
+        <property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory"/>
+    </bean>
+
+    <bean id="cpservice" class="ru.aleksey.cp.service.CPServiceImpl">
+        <property name="accountDao" ref="accountDao"/>
+        <property name="paymentDao" ref="paymentDao"/>
+        <property name="personDao" ref="personDao"/>
+    </bean>
+
+    <bean id="accountValidator" class="ru.aleksey.cp.validator.AccountValidator"/>
+    <bean id="paymentValidator" class="ru.aleksey.cp.validator.PaymentValidator"/>
+
+    <!--<bean id="messageSource"-->
+                <!--class="org.springframework.context.support.ReloadableResourceBundleMessageSource">-->
+        <!--<property name="basename" value="classpath:message" />-->
+        <!--<property name="defaultEncoding" value="UTF-8" />-->
+    <!--</bean>-->
+
+    <bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+        <property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory"/>
+    </bean>
+
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+    <mvc:default-servlet-handler/>
+    <mvc:annotation-driven/>
+
+</beans>
+
